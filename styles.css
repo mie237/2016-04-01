@@ -1,0 +1,37 @@
+p, li, pre {
+    color: black;
+}
+
+td {
+    color: black;
+}
+
+slides > slide {
+  margin-top: -500px;
+}
+
+td, tr, th {
+  color: black !important;
+  background:white !important;
+  padding: 4px !important;
+}
+
+pre {
+  font-family: 'Source Code Pro', 'Courier New', monospace;
+  font-size: 16px;
+  line-height: 22px;
+  padding: 10px 0 10px 60px;
+  letter-spacing: -1px;
+  margin-bottom: 20px;
+  width: 106%;
+  left: -60px;
+  position: relative;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  /*overflow: hidden;*/
+}
+
+.rmdtable {
+  border-top: 1px solid #797979
+}

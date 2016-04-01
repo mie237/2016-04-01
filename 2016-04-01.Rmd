@@ -1,0 +1,172 @@
+---
+title: 'MIE237'
+author: "Neil Montgomery"
+date: "2016-04-01"
+output: 
+  ioslides_presentation: 
+    css: 'styles.css' 
+    widescreen: true 
+    transition: 0.001
+---
+\newcommand{\Var}[1]{\text{Var}\left( #1 \right)}
+\newcommand{\E}[1]{E\left( #1 \right)}
+\newcommand{\Sample}[1]{#1_1,\ldots,#1_n}
+\newcommand{\od}[2]{\overline #1_{#2\cdot}}
+\newcommand{\flist}[2]{\{#1_1, #1_2, \ldots, #1_#2\}}
+\newcommand{\samp}[2]{#1_1, #1_2, \ldots, #1_#2}
+\renewcommand{\bar}[1]{\overline{#1}}
+\newcommand{\ve}{\varepsilon}
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Practical Model Selection { .build }
+
+There is no universally accepted model selection algorithm.
+
+There is a large number of different criteria and strategies to use, some traditional and some modern.
+
+We will focus on one (new) example *criterion* along with the so-called *sequential* strategies (add/remove one variable at a time) for model selection.
+
+We will not discuss some of the more modern, computer-intensive model selection strategies based purely on predictive performance, which also require very large datasets. 
+
+## A possible new criterion: "Adjusted" $R^2$ { .build }
+
+Consider two multiple regression models where one (the "smaller") is nested withing the other (the "larger").
+
+Example: $y = \beta_0 + \beta_1 x_1 + \ve$ versus $y = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \ve$.
+
+Fact: $R^2$ for the larger model must be at least as large as $R^2$ for the smaller model, no matter what. 
+
+Even if the extra terms in the larger model are, say, do nothing to predict $y$ at all and don't really belong.
+
+Why does this happen? Because $R^2 = 1 - SSE \big/ SST$ is calculated *after* the sum of squared residuals is minimized, and more terms in a model mean there is a larger number of possible sets of residuals over which to minimize.
+
+This is an easy example of why there are no automated model selection algorithms.
+
+## Adjusting for the number of model terms { .build }
+
+$R^2$ always increases with more terms because $SSE$ always decreases with more terms. 
+
+An adjusted version of $R^2$ divides $SSE$ by its degrees of freedom as follows:
+
+$$R^2_{adj} = 1 - \frac{SSE\big/(n-(k+1))}{SST\big/(n-1)} = 1 - \frac{MSE}{SST/(n-1)} = 1 - \frac{MSE}{s^2_y}$$
+
+The adjusted version is penalized for adding model terms. It can be *smaller* even for larger models if the reduction in SSE can't overcome the decrease in error degrees of freedom.
+
+$R^2_{adj}$ can be used as a model comparison *criterion*, with larger being better. There are many other similar criteria - a few are mentioned in the book.
+
+## $R^2_{adj}$ examples
+
+I will simulate from a "true" model: $y = 1 + 2x_1 + 3x_2 + \ve$ with $\ve \sim N(0,1)$ and $n=40$. 
+
+Then I will simulate from another "true" model: $y = 1 + 2x_1 + 0.1x_2 + \ve$
+
+```{r, echo=TRUE}
+n <- 40
+x_1 <- 1:n/10
+x_2 <- sample(x_1)
+e1 <- data.frame(y = 1 + 2*x_1 + 3*x_2 + rnorm(n, 0, 1))
+e2 <- data.frame(y = 1 + 2*x_1 + 0.1*x_2 + rnorm(n, 0, 1))
+
+var(e1$y)
+var(e2$y)
+```
+
+## first example - "smaller" model
+
+```{r}
+summary(lm(y ~ x_1, data=e1))
+```
+
+## first example - "larger" model
+
+```{r}
+summary(lm(y ~ x_1 + x_2, data=e1))
+```
+
+## second example - "smaller" model
+
+```{r}
+summary(lm(y ~ x_1, data=e2))
+```
+
+## second example - "larger" model
+
+```{r}
+summary(lm(y ~ x_1 + x_2, data=e2))
+```
+
+## Sequential strategies { .build }
+
+Sequential strategies involve adding (or removing) one variable at a time in a so-called "greedy" manner until a final model is selected.
+
+Issue 1: usually equivalent to a large number of hypothesis tests performed on the same data.
+
+Issue 2: current choices depend on past choices
+
+Issue 3: multicollinearity can result in good variables omitted/bad variables included/more than one equally good final model
+
+## Forward regression - I
+
+Easier to demonstrate than to describe. Start with: $y, x_1, x_2, \ldots, x_k$
+
+Fit \textit{all} the models with one term:
+$$y = \beta_0+\beta_1 x_j + \varepsilon$$
+
+If none give a small F-test p-value, it is unlikely that there will
+be any useful model at all.
+
+Either stop, or proceed with the strategy, with great caution (e.g. there is a strong scientific reason to consider interaction terms)\ldots
+
+## Forward regression - II
+
+Note the model that produces any of the following (equivalent!):
+
+* largest SSR
+
+* smallest SSE
+
+* largest F
+
+* largest $|T|$
+
+* **smallest p-value**
+
+Call $x_{j_i}$ the "winner". (Note the possible arbitriness in this and each subsequent step.)
+
+
+## Forward regression - III
+
+Next: fit *all* the models with two terms:
+$$y = \beta_0+\beta_1 x_{j_1} + \beta_2 x_j + \varepsilon$$
+(for $j \ne j_1$)
+
+If no new variable included gets a small enough p-value, stop the procedure.
+
+Otherwise, determine the variable that results in the smallest two-term SSE and call it $x_{j_2}$
+
+And so on with all three term models...four term models...until you can't add any more variables resulting in small p-values. 
+
+## Example 1
+
+```{r}
+set.seed(12)
+n <- 50
+x1 <- runif(n)
+x2 <- runif(n)
+x3 <- runif(n)
+x4 <- runif(n)
+x5 <- runif(n)
+y <- x1 + 0.4*x2 + 0.6*x4 + rnorm(n, 0, 0.2)
+f1 <- data.frame(y,x1,x2,x3,x4,x5)
+```
+
+## Example 2
+
+```{r}
+f2
+```
+
